@@ -18,7 +18,7 @@ namespace DiaryParser
                 throw new ArgumentException("path to destination file not found");
 
             var diaryRows = new HtmlParser().Parse(sourcePath, 
-                new DateSpec[]{ new DatePartReplaceSpec("10.11.2019","11.10.2019") }}
+                new DateSpec[]{ new DatePartReplaceSpec("10.11.2019","11.10.2019") }
             );
 
             var orderedRows = diaryRows
