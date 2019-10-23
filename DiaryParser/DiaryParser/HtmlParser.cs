@@ -9,7 +9,7 @@ namespace DiaryParser
 {
     public class HtmlParser
     {
-        public IEnumerable<DiaryRow> Parse(string path)
+        public IEnumerable<DiaryRow> Parse(string path, IEnumerable<DateSpec> dateSpecs=null, IEnumerable<TextSpec> textSpecs = null)
         {
             var doc = new HtmlDocument();            
             doc.LoadHtml(File.ReadAllText(path));
@@ -41,11 +41,25 @@ namespace DiaryParser
 
                     if (additionalDateInfo.Contains("."))
                     {
+                        if(!DateTime.TryParse(additionalDateInfo, out when))
+                        {
+                            var parts = additionalDateInfo.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            var nextPattern = parts[1] + " " + parts[0];
+                            when = DateTime.Parse(nextPattern);
+                        }
                         when = DateTime.Parse(additionalDateInfo);
                     }
                     else
                     {
                         when = DateTime.Parse(string.Format("{0:dd.MM.yyyy}", when) + " " + additionalDateInfo);
+                    }
+
+                    if (dateSpecs != null)
+                    {
+                        foreach (var spec in dateSpecs)
+                        {
+                            when = spec.Process(additionalDateInfo,when) ?? when;
+                        }
                     }
 
                     clearText = clearText.Replace($"[{additionalDateInfo}]", "");
@@ -61,10 +75,29 @@ namespace DiaryParser
                 diaryRow.Time = when.ToString("HH:mm");
                 diaryRow.Text = clearText;
 
+                if(textSpecs!=null)
+                {
+                    foreach (var textSpec in textSpecs)
+                    {
+                        diaryRow.Text = textSpec.Process(diaryRow.Text);
+                    }
+                }
+
                 rows.Add(diaryRow);
             }
 
             return rows;
         }
+    }
+
+
+    public abstract class DateSpec
+    {
+        public abstract DateTime? Process(string dt, DateTime whenOriginal);
+    }
+
+    public abstract class TextSpec
+    {
+        public abstract string Process(string original);
     }
 }
